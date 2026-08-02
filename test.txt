@@ -1,0 +1,335 @@
+POST
+/chat
+Chat
+
+Parameters
+Cancel
+Reset
+No parameters
+
+Request body
+
+application/json
+Edit Value
+Schema
+{
+  "user_id": "ext_abc_user",
+  "message": "Why was my cash transaction rejected?",
+  "session_id": "demo1"
+}
+Execute
+Clear
+Responses
+Curl
+
+curl -X 'POST' \
+  'http://127.0.0.1:8000/chat' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "user_id": "ext_abc_user",
+  "message": "Why was my cash transaction rejected?",
+  "session_id": "demo1"
+}'
+Request URL
+http://127.0.0.1:8000/chat
+Server response
+Code	Details
+200	
+Response body
+Download
+{
+  "user": {
+    "user_id": "ext_abc_user",
+    "display_name": "ABC Ltd Client User",
+    "user_type": "external",
+    "role": "client_user",
+    "customer_id": "CUST_ABC"
+  },
+  "response": {
+    "request_id": "3a5a9380-71c2-469d-9b6f-0acb759596ab",
+    "timestamp": "2026-08-02T08:29:50.497018+00:00",
+    "user_context": {
+      "user_id": "ext_abc_user",
+      "display_name": "ABC Ltd Client User",
+      "user_type": "external",
+      "role": "client_user",
+      "customer_id": "CUST_ABC",
+      "market": "SG"
+    },
+    "understanding": {
+      "intent": "EXPLAIN_REJECTION",
+      "domain": "Cash",
+      "resolved_entity": {
+        "type": "transaction",
+        "transaction_id": "TXN-ABC-9001"
+      },
+      "natural_language_interpretation": "User is asking why the latest entitled cash transaction was rejected."
+    },
+    "resolution_status": "RESOLVED",
+    "summary": "The latest cash transaction TXN-ABC-9001 was rejected because Beneficiary declaration document does not match payment instruction.",
+    "root_cause": "Beneficiary declaration document does not match payment instruction.",
+    "explanation": [
+      "The request was interpreted using the customer's entitled context, not a case ID.",
+      "The latest rejected cash transaction was identified from customer context.",
+      "Rejection reason code: DOCUMENT_MISMATCH.",
+      "Beneficiary declaration document does not match payment instruction."
+    ],
+    "recommended_actions": [
+      "Upload revised beneficiary declaration and resubmit transaction.",
+      "After uploading the corrected document, resubmit the transaction for processing.",
+      "If the issue continues, the agent can create an ops review case automatically."
+    ],
+    "workflow": {
+      "matched": false,
+      "workflow_id": null,
+      "workflow_name": null,
+      "confidence": null,
+      "steps": []
+    },
+    "case": {
+      "created": false,
+      "reason": "The issue is explainable and has a clear self-service resolution."
+    },
+    "document": {},
+    "agent_execution": [
+      {
+        "agent": "Identity Agent",
+        "status": "COMPLETED",
+        "detail": "Resolved user identity and user type.",
+        "metadata": {
+          "user_type": "external",
+          "customer_id": "CUST_ABC"
+        }
+      },
+      {
+        "agent": "Customer Context Agent",
+        "status": "COMPLETED",
+        "detail": "Loaded customer-scoped operational context.",
+        "metadata": {
+          "customer_summary": "Customer ABC Ltd has products Cash, Trade, COBAM and 2 recent transactions."
+        }
+      },
+      {
+        "agent": "Workflow Discovery Agent",
+        "status": "NO_MATCH",
+        "detail": "Searched workflow catalog using natural language intent.",
+        "metadata": {
+          "workflow_id": null,
+          "workflow_name": null,
+          "confidence": null
+        }
+      },
+      {
+        "agent": "Resolution Agent",
+        "status": "RESOLVED",
+        "detail": "Resolved transaction rejection without creating a case.",
+        "metadata": {
+          "transaction_id": "TXN-ABC-9001"
+        }
+      }
+    ],
+    "trace_available": false,
+    "ui_hints": {
+      "show_summary_card": true,
+      "show_agent_timeline": true,
+      "show_recommended_actions": true,
+      "show_case_panel": false,
+      "show_workflow_panel": true,
+      "primary_action": "Upload corrected document"
+    }
+  }
+}
+Response headers
+ content-length: 2649 
+ content-type: application/json 
+ date: Sun,02 Aug 2026 08:29:47 GMT 
+ server: uvicorn 
+Responses
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+"string"
+No links
+422	
+Validation Error
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "detail": [
+    {
+      "loc": [
+        "string",
+        0
+      ],
+      "msg": "string",
+      "type": "string",
+      "input": "string",
+      "ctx": {}
+    }
+  ]
+}
+No links
+
+POST
+/upload
+Upload Document
+
+Parameters
+Cancel
+Reset
+No parameters
+
+Request body
+
+multipart/form-data
+user_id *
+string
+ext_abc_user
+session_id
+string
+demo2
+Send empty value
+file *
+string
+trident-entity-search-entmt_v2.txt
+Execute
+Clear
+Responses
+Curl
+
+curl -X 'POST' \
+  'http://127.0.0.1:8000/upload' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: multipart/form-data' \
+  -F 'user_id=ext_abc_user' \
+  -F 'session_id=demo2' \
+  -F 'file=@trident-entity-search-entmt_v2.txt;type=text/plain'
+Request URL
+http://127.0.0.1:8000/upload
+Server response
+Code	Details
+200	
+Response body
+Download
+{
+  "user": {
+    "user_id": "ext_abc_user",
+    "display_name": "ABC Ltd Client User",
+    "user_type": "external",
+    "role": "client_user",
+    "customer_id": "CUST_ABC"
+  },
+  "response": {
+    "request_id": "24d5f951-6e99-46e5-add2-c1c55b0978b8",
+    "timestamp": "2026-08-02T08:33:24.254238+00:00",
+    "user_context": {
+      "user_id": "ext_abc_user",
+      "display_name": "ABC Ltd Client User",
+      "user_type": "external",
+      "role": "client_user",
+      "customer_id": "CUST_ABC",
+      "market": "SG"
+    },
+    "understanding": {
+      "intent": "DOCUMENT_UPLOAD_VALIDATION",
+      "domain": "Cash",
+      "resolved_entity": {
+        "type": "document",
+        "file_name": "trident-entity-search-entmt_v2.txt"
+      }
+    },
+    "resolution_status": "DOCUMENT_VALIDATION_FAILED",
+    "summary": "Document validation failed because the expected supporting declaration was not identified.",
+    "root_cause": "Expected supporting declaration was not identified.",
+    "explanation": [
+      "Document type could not be confidently matched to the expected beneficiary declaration.",
+      "Supporting declaration may be missing or incorrectly named."
+    ],
+    "recommended_actions": [
+      "Upload beneficiary declaration document.",
+      "Ensure beneficiary details match the payment instruction."
+    ],
+    "workflow": {},
+    "case": {
+      "created": false,
+      "reason": "Case may be created if the user cannot provide the required document."
+    },
+    "document": {
+      "uploaded": true,
+      "file_name": "trident-entity-search-entmt_v2.txt",
+      "storage_path": "C:\\Users\\1589844\\Clone_workRepository\\agentic-backend\\uploads\\CUST_ABC\\trident-entity-search-entmt_v2.txt",
+      "validation_status": "FAILED"
+    },
+    "agent_execution": [
+      {
+        "agent": "Document Agent",
+        "status": "COMPLETED",
+        "detail": "Stored and validated uploaded document.",
+        "metadata": {
+          "file_name": "trident-entity-search-entmt_v2.txt",
+          "status": "FAILED"
+        }
+      }
+    ],
+    "trace_available": false,
+    "ui_hints": {
+      "show_document_panel": true,
+      "show_recommended_actions": true,
+      "show_agent_timeline": true,
+      "primary_action": "Upload correct document"
+    }
+  }
+}
+Response headers
+ content-length: 1810 
+ content-type: application/json 
+ date: Sun,02 Aug 2026 08:33:23 GMT 
+ server: uvicorn 
+Responses
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+"string"
+No links
+422	
+Validation Error
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "detail": [
+    {
+      "loc": [
+        "string",
+        0
+      ],
+      "msg": "string",
+      "type": "string",
+      "input": "string",
+      "ctx": {}
+    }
+  ]
+}
+No links
