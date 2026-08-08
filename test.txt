@@ -369,3 +369,108 @@ In the top navigation header, click the Settings button (Agentic Simulator).
 Select Live Local FastAPI (http://127.0.0.1:8000).
 Click Save & Apply Settings.
 All chat requests (POST /chat) and document uploads (POST /upload) will now proxy directly to your local FastAPI agentic backend.
+
+
+*********************** EntityIQ ********************************************
+1. What Makes This Solution Approach Unique?
+While many teams build standard keyword RAG or basic fuzzy string matching, EntityIQ introduces four fundamental architectural innovations:
+Pluggable Multi-Stage Entity Resolution Engine:
+Stage 1 (Blocking): Generates high-speed index keys (Name Prefix, RegNo, Tax ID, LEI) to reduce search space from millions to candidate blocks.
+Stage 2 (Deterministic Match): Evaluates high-confidence strict equality rules (REG_NO_EXACT, LEI_EXACT, DOC_HASH_EXACT).
+Stage 3 (Probabilistic Feature Matrix): Calculates weighted similarity across multi-modal signals:
+Jaro-Winkler string distance on company name variants and historical aliases.
+Jaccard token overlap on registered office addresses.
+Board of Directors overlap ratio.
+Stage 4 (Decision Threshold Classifier):
+: AUTO_LINK (automatically merged into canonical entity record).
+: NEEDS_REVIEW (routed with explainability evidence logs to KYC Analyst).
+: NO_MATCH (creates a distinct candidate entity).
+GraphRAG + Leiden Community Aggregation:
+Document RAG alone misses corporate relationships. EntityIQ applies Leiden Community Detection on the Neo4j graph to aggregate global credit exposure, ultimate parent controllers, and sanctions across entire corporate clusters.
+Agent-to-Agent Graph JSON Exchange Protocol (/api/agent/graph-subcall):
+Specialized agents (e.g. Orchestrator, KYC Agent, Risk Agent, Investigation Agent) pass structured JSON node/relationship payloads to each other over standardized APIs.
+Enables downstream agents to run graph algorithms (centrality, PageRank, UBO path tracing) and dynamically render visual graph canvases inside the agentic workspace.
+Zero-Trust Purpose-Bound Policy Engine:
+Enforces field-level access controls and dynamic redaction based on user role and regional regulations (e.g. redacting raw source documents for RMs while granting full access to Compliance Investigators).
+2. The Role of Neo4j & Node/Relationship Schema
+Neo4j acts as the Property Graph Backbone, supporting variable-depth ownership traversal, pattern matching, cyclic entity loops, and sanctions path tracing.
+Node Labels & Properties
+:Organization: id, canonicalName, registrationNumber, lei, jurisdiction, status, communityId, creditExposureUsd
+:Person: id, name, nationality, pepHit, isUltimateParent
+:SanctionList: id, matchedName, listName, authority, dateListed
+:Document: id, sourceSystem, docHash, attribution
+Relationship Types & Attributes
+:OWNS: ownershipPercentage (float), startDate, sourceRef, confidence
+:DIRECTS: appointmentDate, role ('Director', 'Managing Director'), sourceRef
+:SUBSIDIARY_OF: controlPct, jurisdiction, ACRAVerified (boolean)
+:BENEFICIAL_OWNER: effectiveOwnershipPct, calculatedVia ('GraphTraversal'), auditId
+3. Concrete Sample Cypher Queries
+Query A: Variable-Depth UBO Traversal (1 to 5 Hops)
+code
+Cypher
+MATCH path = (p:Person)-[r:OWNS|BENEFICIAL_OWNER*1..5]->(o:Organization {id: "ENT-SG-1002"})
+WHERE r.ownershipPercentage >= 25 OR p.isUltimateParent = true
+RETURN p.name AS UBO_Name, 
+       p.nationality AS Nationality, 
+       reduce(pct = 100.0, rel IN r | pct * (rel.ownershipPercentage/100.0)) AS EffectiveOwnershipPct,
+       [node IN nodes(path) | node.canonicalName] AS OwnershipChain;
+Query B: Multi-Hop Sanctions & PEP Trace
+code
+Cypher
+MATCH path = (target:Organization {id: "ENT-SG-1002"})-[*1..4]-(s:SanctionList)
+RETURN target.canonicalName AS TargetEntity,
+       s.matchedName AS SanctionedParty,
+       s.listName AS SanctionAuthority,
+       length(path) AS SeparationHops,
+       [rel IN relationships(path) | type(rel)] AS RelationshipTypes;
+Query C: Leiden Community Corporate Group Risk Aggregation
+code
+Cypher
+MATCH (o:Organization {id: "ENT-SG-1002"})
+MATCH (cluster:Organization)-[:SUBSIDIARY_OF|OWNS*0..3]-(o)
+WITH cluster.communityId AS CommunityID, collect(cluster) AS GroupEntities
+RETURN CommunityID,
+       size(GroupEntities) AS TotalMemberCount,
+       sum(GroupEntities.creditExposureUsd) AS TotalGroupExposureUSD,
+       any(e IN GroupEntities WHERE e.sanctionHit = true) AS GroupHasSanctionHit;
+4. Multi-Agent API Provision & Graph Sub-Call Payload
+Whenever an AI Agent invokes another agent or the Knowledge Graph service, it consumes the /api/agent/graph-subcall endpoint:
+Sample Request (POST /api/agent/graph-subcall):
+code
+JSON
+{
+  "callingAgent": "InvestigationAgent",
+  "receivingAgent": "Neo4j_KnowledgeGraph_Service",
+  "entityId": "ENT-SG-1002",
+  "depth": 2
+}
+Standardized JSON Output Exchanged Between Agents:
+code
+JSON
+{
+  "status": "SUCCESS",
+  "protocolVersion": "v2.0-AgentGraphExchange",
+  "data": {
+    "callingAgent": "InvestigationAgent",
+    "receivingAgent": "Neo4j_KnowledgeGraph_Service",
+    "purpose": "Sub-agent relationship intelligence & UBO graph extraction",
+    "cypherQuery": "MATCH path = (o:Organization {id: \"ENT-SG-1002\"})-[r:OWNS|DIRECTS|SUBSIDIARY_OF*1..3]-(target) RETURN path",
+    "subGraph": {
+      "nodes": [
+        { "id": "ENT-SG-1002", "label": "Vertex Global Group (Singapore)", "type": "ORGANIZATION", "jurisdiction": "Singapore" },
+        { "id": "ENT-BVI-3001", "label": "Vertex Holdings (BVI) Ltd", "type": "ORGANIZATION", "jurisdiction": "BVI" },
+        { "id": "PER-RU-8812", "label": "Viktor Ivanov", "type": "PERSON", "pepHit": true }
+      ],
+      "edges": [
+        { "id": "EDG-101", "source": "ENT-BVI-3001", "target": "ENT-SG-1002", "type": "OWNS", "ownershipPercentage": 100 },
+        { "id": "EDG-102", "source": "PER-RU-8812", "target": "ENT-BVI-3001", "type": "BENEFICIAL_OWNER", "ownershipPercentage": 75 }
+      ]
+    },
+    "renderDirective": "SUBGRAPH_CANVAS",
+    "timestamp": "2026-08-08T07:00:00.000Z"
+  }
+}
+🎨 Visual & Aesthetic UI Enhancements
+Refined Executive Palette: Framed in deep slate (#0f172a) and slate-950 canvas with glowing indigo accents and high-contrast borders (border-slate-800).
+New "Neo4j & Uniqueness" Tab: Dedicated navigation tab with an interactive Cypher Workbench, schema visualizer, and live Multi-Agent Sub-Call API tester.
+Embedded Agent Graph Cards: Chat messages now automatically render multi-agent protocol trace badges, executed Cypher code blocks, and node/edge tags.
